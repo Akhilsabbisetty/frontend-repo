@@ -1,90 +1,70 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import "./App.css";
 
-const products = [
-  {
-    id: 1,
-    name: "Nike Air Max Pulse",
-    brand: "Nike",
-    price: 120,
-    stock: 25,
-    image: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600",
-    category: "Running"
-  },
-  {
-    id: 2,
-    name: "Adidas Ultraboost Cloud",
-    brand: "Adidas",
-    price: 140,
-    stock: 30,
-    image: "https://images.unsplash.com/photo-1608231387042-66d1773070a5?w=600",
-    category: "Lifestyle"
-  },
-  {
-    id: 3,
-    name: "Puma Runner Pro",
-    brand: "Puma",
-    price: 90,
-    stock: 18,
-    image: "https://images.unsplash.com/photo-1549298916-b41d501d3772?w=600",
-    category: "Training"
-  },
-  {
-    id: 4,
-    name: "Classic High Top",
-    brand: "Converse",
-    price: 70,
-    stock: 40,
-    image: "https://images.unsplash.com/photo-1607522370275-f14206abe5d3?w=600",
-    category: "Classic"
-  },
-  {
-    id: 5,
-    name: "Urban Street Runner",
-    brand: "SneakHive",
-    price: 110,
-    stock: 32,
-    image: "https://images.unsplash.com/photo-1552346154-21d32810aba3?w=600",
-    category: "Streetwear"
-  },
-  {
-    id: 6,
-    name: "White Flex Trainer",
-    brand: "SneakHive",
-    price: 95,
-    stock: 21,
-    image: "https://images.unsplash.com/photo-1560769629-975ec94e6a86?w=600",
-    category: "Gym"
-  },
-  {
-    id: 7,
-    name: "Black Motion Sneaker",
-    brand: "SneakHive",
-    price: 105,
-    stock: 16,
-    image: "https://images.unsplash.com/photo-1491553895911-0055eca6402d?w=600",
-    category: "Sports"
-  },
-  {
-    id: 8,
-    name: "Premium Leather Low",
-    brand: "SneakHive",
-    price: 150,
-    stock: 14,
-    image: "https://images.unsplash.com/photo-1525966222134-fcfa99b8ae77?w=600",
-    category: "Premium"
-  }
-];
+const shoeCategories = ["Sneakers", "Loafers", "Boots", "Running", "Training", "Formal"];
+
+const shoes = Array.from({ length: 60 }, (_, index) => {
+  const categories = shoeCategories;
+  const brands = ["Nike", "Adidas", "Puma", "Reebok", "New Balance", "SneakHive"];
+  const colors = ["Black", "White", "Blue", "Tan", "Grey", "Red"];
+  const category = categories[index % categories.length];
+  const brand = brands[index % brands.length];
+  const color = colors[index % colors.length];
+
+  return {
+    id: `shoe-${index + 1}`,
+    type: "shoe",
+    name: `${color} ${category} ${index + 1}`,
+    brand,
+    category,
+    price: 55 + (index % 20) * 7,
+    stock: 10 + (index % 35),
+    image: [
+      "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=700",
+      "https://images.unsplash.com/photo-1608231387042-66d1773070a5?w=700",
+      "https://images.unsplash.com/photo-1549298916-b41d501d3772?w=700",
+      "https://images.unsplash.com/photo-1607522370275-f14206abe5d3?w=700",
+      "https://images.unsplash.com/photo-1552346154-21d32810aba3?w=700",
+      "https://images.unsplash.com/photo-1560769629-975ec94e6a86?w=700"
+    ][index % 6]
+  };
+});
+
+const sandals = Array.from({ length: 50 }, (_, index) => {
+  const categories = ["Slides", "Flip Flops", "Leather Sandals", "Outdoor Sandals", "Casual Sandals"];
+  const brands = ["Crocs", "Birkenstock", "Nike", "Adidas", "SneakHive"];
+  const category = categories[index % categories.length];
+  const brand = brands[index % brands.length];
+
+  return {
+    id: `sandal-${index + 1}`,
+    type: "sandal",
+    name: `${category} ${index + 1}`,
+    brand,
+    category,
+    price: 25 + (index % 15) * 5,
+    stock: 15 + (index % 30),
+    image: [
+      "https://images.unsplash.com/photo-1603487742131-4160ec999306?w=700",
+      "https://images.unsplash.com/photo-1614252369475-531eba835eb1?w=700",
+      "https://images.unsplash.com/photo-1562273138-f46be4ebdf33?w=700",
+      "https://images.unsplash.com/photo-1624005340901-6fb7daff484b?w=700",
+      "https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?w=700"
+    ][index % 5]
+  };
+});
 
 function App() {
   const [activePage, setActivePage] = useState("home");
+  const [theme, setTheme] = useState("light");
+  const [selectedCategory, setSelectedCategory] = useState("All");
   const [cart, setCart] = useState([]);
   const [orders, setOrders] = useState([]);
   const [email, setEmail] = useState("customer@example.com");
-  const [orderMessage, setOrderMessage] = useState("");
-  const [paymentMessage, setPaymentMessage] = useState("");
-  const [invoiceMessage, setInvoiceMessage] = useState("");
+  const [account, setAccount] = useState({ name: "", email: "", password: "" });
+  const [signupMessage, setSignupMessage] = useState("");
+  const [checkoutMessage, setCheckoutMessage] = useState("");
 
   const [status, setStatus] = useState({
     user: "Checking...",
@@ -95,13 +75,25 @@ function App() {
   });
 
   useEffect(() => {
+    document.body.className = theme;
+  }, [theme]);
+
+  useEffect(() => {
+    checkServices();
+  }, []);
+
+  const checkServices = () => {
     axios.get(`${process.env.REACT_APP_USER_API}/users`)
       .then((res) => setStatus((s) => ({ ...s, user: res.data.status || "running" })))
       .catch(() => setStatus((s) => ({ ...s, user: "offline" })));
 
     axios.get(`${process.env.REACT_APP_INVENTORY_API}/inventory`)
-      .then((res) => setStatus((s) => ({ ...s, inventory: `Stock ${res.data.stock || "available"}` })))
+      .then((res) => setStatus((s) => ({ ...s, inventory: res.data.stock ? `Stock ${res.data.stock}` : "running" })))
       .catch(() => setStatus((s) => ({ ...s, inventory: "offline" })));
+
+    axios.post(`${process.env.REACT_APP_ORDER_API}/orders`)
+      .then(() => setStatus((s) => ({ ...s, order: "running" })))
+      .catch(() => setStatus((s) => ({ ...s, order: "offline" })));
 
     axios.get(`${process.env.REACT_APP_PAYMENT_API}/payment`)
       .then((res) => setStatus((s) => ({ ...s, payment: res.data.status || "running" })))
@@ -110,7 +102,12 @@ function App() {
     axios.get(`${process.env.REACT_APP_NOTIFICATION_API}/notification`)
       .then((res) => setStatus((s) => ({ ...s, notification: res.data.status || "running" })))
       .catch(() => setStatus((s) => ({ ...s, notification: "offline" })));
-  }, []);
+  };
+
+  const filteredShoes = useMemo(() => {
+    if (selectedCategory === "All") return shoes;
+    return shoes.filter((item) => item.category === selectedCategory);
+  }, [selectedCategory]);
 
   const addToCart = (product) => {
     setCart((current) => {
@@ -131,27 +128,33 @@ function App() {
 
   const cartTotal = cart.reduce((sum, item) => sum + item.price * item.qty, 0);
 
+  const createAccount = () => {
+    if (!account.name || !account.email || !account.password) {
+      setSignupMessage("Please enter name, email, and password.");
+      return;
+    }
+
+    setEmail(account.email);
+    setSignupMessage(`Account created for ${account.name}.`);
+  };
+
   const placeOrder = async () => {
-    setOrderMessage("Creating order...");
-    setPaymentMessage("");
-    setInvoiceMessage("");
+    setCheckoutMessage("Processing order, payment, and invoice...");
 
     try {
-      const orderResponse = await axios.post(`${process.env.REACT_APP_ORDER_API}/orders`, {
+      const orderId = `ORD-${Date.now()}`;
+
+      await axios.post(`${process.env.REACT_APP_ORDER_API}/orders`, {
+        orderId,
         items: cart,
         total: cartTotal
       });
 
-      const orderId = `ORD-${Date.now()}`;
-      setOrderMessage(orderResponse.data.status || "order placed");
-
-      const paymentResponse = await axios.post(`${process.env.REACT_APP_PAYMENT_API}/payment/pay`, {
+      await axios.post(`${process.env.REACT_APP_PAYMENT_API}/payment/pay`, {
         orderId,
         amount: cartTotal,
-        mode: "DEMO"
+        mode: "PROJECT"
       });
-
-      setPaymentMessage(paymentResponse.data.message || "Demo payment completed");
 
       const invoiceResponse = await axios.post(`${process.env.REACT_APP_NOTIFICATION_API}/notification/invoice`, {
         orderId,
@@ -159,8 +162,6 @@ function App() {
         amount: cartTotal,
         items: cart
       });
-
-      setInvoiceMessage(invoiceResponse.data.message || `Invoice sent to ${email}`);
 
       setOrders((current) => [
         {
@@ -175,123 +176,120 @@ function App() {
       ]);
 
       setCart([]);
+      setCheckoutMessage(invoiceResponse.data.message || `Invoice sent to ${email}`);
       setActivePage("orders");
     } catch (error) {
-      setOrderMessage("Order/payment/invoice failed. Please check backend service logs.");
+      setCheckoutMessage("Checkout failed. Please verify order, payment, and notification APIs.");
     }
   };
 
-  const statusBadge = (value) => {
-    const offline = String(value).toLowerCase().includes("offline");
-    return <span className={offline ? "badge offline" : "badge online"}>{offline ? "Offline" : "Online"}</span>;
-  };
+  const isOnline = (value) => !String(value).toLowerCase().includes("offline");
 
   return (
     <div className="page">
       <nav className="navbar">
         <div className="brand" onClick={() => setActivePage("home")}>
-          <span className="brand-icon">⬢</span>
+          <div className="brand-icon">⚡</div>
           <div>
             <h1>Sneak<span>Hive</span></h1>
-            <p>Premium Sneaker Collective</p>
+            <p>Style that moves</p>
           </div>
         </div>
 
         <div className="navlinks">
-          <button className={activePage === "home" ? "active" : ""} onClick={() => setActivePage("home")}>Home</button>
-          <button className={activePage === "products" ? "active" : ""} onClick={() => setActivePage("products")}>Products</button>
-          <button className={activePage === "orders" ? "active" : ""} onClick={() => setActivePage("orders")}>Orders</button>
-          <button className={activePage === "profile" ? "active" : ""} onClick={() => setActivePage("profile")}>Profile</button>
+          {["home", "shoes", "sandals", "cart", "orders", "profile", "services"].map((page) => (
+            <button
+              key={page}
+              className={activePage === page ? "active" : ""}
+              onClick={() => setActivePage(page)}
+            >
+              {page.charAt(0).toUpperCase() + page.slice(1)}
+            </button>
+          ))}
         </div>
 
-        <button className="cart-button" onClick={() => setActivePage("cart")}>
-          🛒 Cart <span>{cart.reduce((sum, item) => sum + item.qty, 0)}</span>
-        </button>
+        <div className="right-actions">
+          <button className="theme-toggle" onClick={() => setTheme(theme === "light" ? "dark" : "light")}>
+            {theme === "light" ? "🌙 Dark" : "☀️ Light"}
+          </button>
+          <button className="cart-button" onClick={() => setActivePage("cart")}>
+            🛒 <span>{cart.reduce((sum, item) => sum + item.qty, 0)}</span>
+          </button>
+        </div>
       </nav>
 
       {activePage === "home" && (
         <>
           <section className="hero">
             <div className="hero-content">
-              <p className="eyebrow">New season drop</p>
-              <h2>Step bold. Move smart. Rule the street.</h2>
+              <p className="eyebrow">SneakHive Collection</p>
+              <h2>Fresh sneakers. Premium comfort. Everyday confidence.</h2>
               <p>
-                Discover curated sneakers with real-time inventory, demo order flow,
-                payment simulation, and invoice notifications powered by your microservices.
+                Explore shoes, sandals, demo checkout, service status, and invoice email flow in one project-ready storefront.
               </p>
               <div className="hero-actions">
-                <button onClick={() => setActivePage("products")}>Explore Collection</button>
-                <button className="secondary" onClick={() => setActivePage("orders")}>View Orders</button>
+                <button onClick={() => setActivePage("shoes")}>Shop Shoes</button>
+                <button className="secondary" onClick={() => setActivePage("sandals")}>Shop Sandals</button>
               </div>
             </div>
             <div className="hero-card">
-              <img src="https://images.unsplash.com/photo-1549298916-b41d501d3772?w=800" alt="Sneaker" />
-            </div>
-          </section>
-
-          <section className="status-grid">
-            <div className="status-card">
-              <div className="icon blue">👤</div>
-              <div>
-                <h3>User Service {statusBadge(status.user)}</h3>
-                <p>{status.user}</p>
-              </div>
-            </div>
-
-            <div className="status-card">
-              <div className="icon green">📦</div>
-              <div>
-                <h3>Inventory Service {statusBadge(status.inventory)}</h3>
-                <p>{status.inventory}</p>
-              </div>
-            </div>
-
-            <div className="status-card">
-              <div className="icon purple">🛒</div>
-              <div>
-                <h3>Order Service {statusBadge(status.order)}</h3>
-                <p>Create demo orders</p>
-              </div>
-            </div>
-
-            <div className="status-card">
-              <div className="icon yellow">💳</div>
-              <div>
-                <h3>Payment Service {statusBadge(status.payment)}</h3>
-                <p>{status.payment}</p>
-              </div>
-            </div>
-
-            <div className="status-card">
-              <div className="icon orange">🔔</div>
-              <div>
-                <h3>Notification Service {statusBadge(status.notification)}</h3>
-                <p>{status.notification}</p>
-              </div>
+              <img src="https://images.unsplash.com/photo-1549298916-b41d501d3772?w=900" alt="SneakHive" />
             </div>
           </section>
 
           <div className="section-header">
-            <h2>Featured Sneakers</h2>
-            <button onClick={() => setActivePage("products")}>View All</button>
+            <h2>Featured Shoes</h2>
+            <button onClick={() => setActivePage("shoes")}>View 60 Shoes</button>
           </div>
 
           <section className="products">
-            {products.slice(0, 4).map((product) => (
+            {shoes.slice(0, 8).map((product) => (
               <ProductCard key={product.id} product={product} addToCart={addToCart} />
             ))}
           </section>
         </>
       )}
 
-      {activePage === "products" && (
+      {activePage === "shoes" && (
         <>
           <div className="section-header">
-            <h2>All SneakHive Products</h2>
-            <p>{products.length} curated shoes available</p>
+            <div>
+              <h2>Shoes Collection</h2>
+              <p>Sneakers, loafers, boots, running, training, and formal shoes.</p>
+            </div>
           </div>
+
+          <div className="filters">
+            {["All", ...shoeCategories].map((category) => (
+              <button
+                key={category}
+                className={selectedCategory === category ? "active-filter" : ""}
+                onClick={() => setSelectedCategory(category)}
+              >
+                {category}
+              </button>
+            ))}
+          </div>
+
           <section className="products">
-            {products.map((product) => (
+            {filteredShoes.map((product) => (
+              <ProductCard key={product.id} product={product} addToCart={addToCart} />
+            ))}
+          </section>
+        </>
+      )}
+
+      {activePage === "sandals" && (
+        <>
+          <div className="section-header">
+            <div>
+              <h2>Sandals Collection</h2>
+              <p>50 sandals across slides, flip flops, leather, outdoor, and casual styles.</p>
+            </div>
+          </div>
+
+          <section className="products">
+            {sandals.map((product) => (
               <ProductCard key={product.id} product={product} addToCart={addToCart} />
             ))}
           </section>
@@ -301,8 +299,9 @@ function App() {
       {activePage === "cart" && (
         <section className="panel">
           <h2>Your Cart</h2>
+
           {cart.length === 0 ? (
-            <p>Your cart is empty. Add sneakers from Products.</p>
+            <p>Your cart is empty. Add products from Shoes or Sandals.</p>
           ) : (
             <>
               {cart.map((item) => (
@@ -310,7 +309,7 @@ function App() {
                   <img src={item.image} alt={item.name} />
                   <div>
                     <h3>{item.name}</h3>
-                    <p>Qty: {item.qty} × ${item.price}</p>
+                    <p>{item.category} · Qty {item.qty} × ${item.price}</p>
                   </div>
                   <strong>${item.qty * item.price}</strong>
                   <button className="danger" onClick={() => removeFromCart(item.id)}>Remove</button>
@@ -320,13 +319,10 @@ function App() {
               <div className="checkout-box">
                 <div>
                   <h3>Total: ${cartTotal}</h3>
-                  <p>Demo payment only. No real money will be charged.</p>
                   <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Invoice email" />
-                  {orderMessage && <p className="message">{orderMessage}</p>}
-                  {paymentMessage && <p className="message success">{paymentMessage}</p>}
-                  {invoiceMessage && <p className="message success">{invoiceMessage}</p>}
+                  {checkoutMessage && <p className="message success">{checkoutMessage}</p>}
                 </div>
-                <button onClick={placeOrder}>Pay Demo & Send Invoice</button>
+                <button onClick={placeOrder}>Pay & Send Invoice</button>
               </div>
             </>
           )}
@@ -337,7 +333,7 @@ function App() {
         <section className="panel">
           <h2>Orders</h2>
           {orders.length === 0 ? (
-            <p>No orders yet. Place a demo order from the cart.</p>
+            <p>No orders yet.</p>
           ) : (
             orders.map((order) => (
               <div className="order-card" key={order.id}>
@@ -354,20 +350,41 @@ function App() {
 
       {activePage === "profile" && (
         <section className="panel profile">
-          <h2>Profile</h2>
-          <div className="profile-card">
-            <div className="avatar">A</div>
-            <div>
-              <h3>Akhil’s SneakHive Account</h3>
-              <p>Email: {email}</p>
-              <p>Membership: Demo Premium</p>
-              <p>Orders placed in this session: {orders.length}</p>
-            </div>
+          <h2>Create Account / Signup</h2>
+          <div className="signup-form">
+            <input placeholder="Full name" value={account.name} onChange={(e) => setAccount({ ...account, name: e.target.value })} />
+            <input placeholder="Email" value={account.email} onChange={(e) => setAccount({ ...account, email: e.target.value })} />
+            <input placeholder="Password" type="password" value={account.password} onChange={(e) => setAccount({ ...account, password: e.target.value })} />
+            <button onClick={createAccount}>Create Account</button>
+          </div>
+          {signupMessage && <p className="message success">{signupMessage}</p>}
+        </section>
+      )}
+
+      {activePage === "services" && (
+        <section className="panel">
+          <div className="section-header no-padding">
+            <h2>Microservices Status</h2>
+            <button onClick={checkServices}>Refresh</button>
+          </div>
+
+          <div className="service-list">
+            {Object.entries(status).map(([name, value]) => (
+              <div className="service-row" key={name}>
+                <div>
+                  <h3>{name.toUpperCase()} SERVICE</h3>
+                  <p>{value}</p>
+                </div>
+                <span className={isOnline(value) ? "badge online" : "badge offline"}>
+                  {isOnline(value) ? "Online" : "Offline"}
+                </span>
+              </div>
+            ))}
           </div>
         </section>
       )}
 
-      <footer>© 2026 SneakHive. Built with React, Spring Boot, Kafka, Redis, Nexus, Jenkins, EKS and Argo CD.</footer>
+      <footer>© 2026 SneakHive. All rights reserved.</footer>
     </div>
   );
 }
