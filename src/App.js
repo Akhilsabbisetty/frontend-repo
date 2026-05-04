@@ -222,59 +222,84 @@ function App() {
   };
 
   const placeOrder = async () => {
-    if (!currentUser) {
-      setCheckoutMessage("Please login before placing an order.");
-      setActivePage("profile");
-      return;
-    }
+  if (!currentUser) {
+    setCheckoutMessage("Please login before placing an order.");
+    setActivePage("profile");
+    return;
+  }
 
-    if (cart.length === 0) {
-      setCheckoutMessage("Your cart is empty.");
-      return;
-    }
+  if (cart.length === 0) {
+    setCheckoutMessage("Your cart is empty.");
+    return;
+  }
 
-    setCheckoutMessage("Processing order...");
+  setCheckoutMessage("Processing order...");
 
-    try {
-      const orderResponse = await axios.post(`${process.env.REACT_APP_ORDER_API}/orders/place`, {
+  try {
+    // ✅ Step 1: Place Order
+    const orderResponse = await axios.post(
+      `${process.env.REACT_APP_ORDER_API}/orders/place`,
+      {
         email: currentUser.email,
         totalAmount: cartTotal
-      });
+      }
+    );
 
-      const orderId = String(orderResponse.data.orderId || `ORD-${Date.now()}`);
+    const orderId = String(orderResponse.data.orderId || `ORD-${Date.now()}`);
 
-      await axios.post(`${process.env.REACT_APP_PAYMENT_API}/payment/pay`, {
+    // ✅ Step 2: Payment
+    await axios.post(
+      `${process.env.REACT_APP_PAYMENT_API}/payment/pay`,
+      {
         orderId,
         amount: cartTotal,
         mode: "PROJECT"
-      });
+      }
+    );
 
-      const invoiceResponse = await axios.post(`${process.env.REACT_APP_NOTIFICATION_API}/notification/invoice`, {
-        orderId,
-        email: currentUser.email,
-        amount: cartTotal,
-        items: cart
-      });
+    // ✅ Step 3: Notification (SAFE - will not break checkout)
+    let invoiceMessage = `Order placed and payment completed. Invoice notification pending.`;
 
-      setOrders((current) => [
+    try {
+      const invoiceResponse = await axios.post(
+        `${process.env.REACT_APP_NOTIFICATION_API}/notification/invoice`,
         {
-          id: orderId,
-          amount: cartTotal,
-          status: "Paid",
+          orderId,
           email: currentUser.email,
-          items: cart,
-          createdAt: new Date().toLocaleString()
-        },
-        ...current
-      ]);
+          amount: cartTotal,
+          items: cart
+        }
+      );
 
-      setCart([]);
-      setCheckoutMessage(invoiceResponse.data.message || `Invoice sent to ${currentUser.email}`);
-      setActivePage("orders");
-    } catch (error) {
-      setCheckoutMessage("Checkout failed. Please check order, payment, and notification services.");
+      invoiceMessage =
+        invoiceResponse.data.message ||
+        `Invoice sent to ${currentUser.email}`;
+    } catch (invoiceError) {
+      console.warn("Invoice failed but checkout succeeded", invoiceError);
     }
-  };
+
+    // ✅ Save order locally
+    setOrders((current) => [
+      {
+        id: orderId,
+        amount: cartTotal,
+        status: "Paid",
+        email: currentUser.email,
+        items: cart,
+        createdAt: new Date().toLocaleString()
+      },
+      ...current
+    ]);
+
+    setCart([]);
+    setCheckoutMessage(invoiceMessage);
+    setActivePage("orders");
+
+  } catch (error) {
+    console.error("Checkout error:", error);
+    setCheckoutMessage("Checkout failed. Please check order and payment services.");
+  }
+};
 
   const isOnline = (value) => !String(value).toLowerCase().includes("offline");
 
