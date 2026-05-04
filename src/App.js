@@ -15,11 +15,11 @@ const shoeImages = [
 
 const sandalImages = [
   "https://images.unsplash.com/photo-1603487742131-4160ec999306?w=700",
+  "https://images.unsplash.com/photo-1622920799137-86c891159e44?w=700",
   "https://images.unsplash.com/photo-1614252369475-531eba835eb1?w=700",
-  "https://images.unsplash.com/photo-1562273138-f46be4ebdf33?w=700",
-  "https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?w=700",
   "https://images.unsplash.com/photo-1603808033192-082d6919d3e1?w=700",
-  "https://images.unsplash.com/photo-1565129527323-4e94a9e12f76?w=700"
+  "https://images.unsplash.com/photo-1562273138-f46be4ebdf33?w=700",
+  "https://images.unsplash.com/photo-1603487742131-4160ec999306?w=900"
 ];
 
 const shoes = Array.from({ length: 60 }, (_, index) => {
@@ -39,8 +39,8 @@ const shoes = Array.from({ length: 60 }, (_, index) => {
   };
 });
 
-const sandals = Array.from({ length: 50 }, (_, index) => {
-  const categories = ["Slides", "Flip Flops", "Leather Sandals", "Outdoor Sandals", "Casual Sandals"];
+const sandals = Array.from({ length: 30 }, (_, index) => {
+  const categories = ["Slides", "Leather Sandals", "Casual Sandals"];
   const brands = ["Crocs", "Birkenstock", "Nike", "Adidas", "SneakHive"];
 
   return {
@@ -127,7 +127,7 @@ function App() {
   const addToCart = async (product) => {
     if (!currentUser) {
       setToast("Please login before adding products to cart");
-      setActivePage("profile");
+      setTimeout(() => setToast(""), 2500);
       return;
     }
 
@@ -381,7 +381,7 @@ function App() {
           <div className="section-header">
             <div>
               <h2>Sandals Collection</h2>
-              <p>Slides, flip-flops, leather sandals, casual sandals, and outdoor sandals.</p>
+              <p>Slides, leather sandals, and casual sandals.</p>
             </div>
           </div>
 
